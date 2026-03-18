@@ -1,0 +1,50 @@
+import React from 'react';
+import { render } from '@testing-library/react-native';
+import { Text } from 'react-native';
+import { WafProvider } from '../WafProvider';
+
+jest.mock('react-native-webview', () => {
+  const { View } = require('react-native');
+  const RealReact = require('react');
+  const MockWebView = RealReact.forwardRef(
+    (props: Record<string, unknown>, ref: React.Ref<unknown>) =>
+      RealReact.createElement(View, { ...props, ref, testID: 'mock-webview' }),
+  );
+  MockWebView.displayName = 'MockWebView';
+  return { __esModule: true, default: MockWebView };
+});
+
+describe('WafProvider', () => {
+  it('renders children', () => {
+    const { getByText } = render(
+      <WafProvider challengeJsUrl="https://cdn.example.com/challenge.js">
+        <Text>Hello</Text>
+      </WafProvider>,
+    );
+    expect(getByText('Hello')).toBeTruthy();
+  });
+
+  it('renders a WebView component', () => {
+    const { getByTestId } = render(
+      <WafProvider challengeJsUrl="https://cdn.example.com/challenge.js">
+        <Text>Child</Text>
+      </WafProvider>,
+    );
+    expect(getByTestId('mock-webview')).toBeTruthy();
+  });
+
+  it('WebView is hidden (check style props)', () => {
+    const { getByTestId } = render(
+      <WafProvider challengeJsUrl="https://cdn.example.com/challenge.js">
+        <Text>Child</Text>
+      </WafProvider>,
+    );
+    const webview = getByTestId('mock-webview');
+    const style = webview.props.style;
+    expect(style).toMatchObject({
+      height: 0,
+      width: 0,
+      opacity: 0,
+    });
+  });
+});
